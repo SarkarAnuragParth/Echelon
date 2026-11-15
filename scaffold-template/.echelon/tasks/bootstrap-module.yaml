@@ -1,0 +1,509 @@
+id: bootstrap-module
+lld: .echelon/lld/bootstrap-module.md
+depends_on_modules: null
+tasks:
+  pm_intake:
+    agent: pm
+    story_points: 5
+    depends_on: null
+    task_prompt: "This is a new project. The user has provided the following spec: \
+       {{user_spec_document}} .echelon/functional-requirements.md and .echelon/terminology.md\
+       already exist, currently empty. Their current content: Your task: conduct\
+       the intake interview, then produce .echelon/functional-requirements.md and\
+       .echelon/terminology.md. Both files already exist use write() to populate\
+       them, never create_file(). --- ### How to conduct intake Think expansively\
+       before asking anything. A user describing a \"todo app\" is also implicitly\
+       describing authentication, persistence, multi-device access whether\
+       they said so or not. Form your own view of the full product scope first.\
+       Then identify what is genuinely ambiguous in ways that would change architecture\
+       or scope if resolved differently. Interview the user one question at a\
+       time, each with your own recommendation, using ask_user(). You decide when\
+       you have enough information there is no fixed number of questions.\
+       For anything that would not materially change architecture or scope, do not\
+       ask: make the most reasonable, ambitious assumption and document it explicitly\
+       as an assumption in .echelon/functional-requirements.md. Assumptions must\
+       be visible, never silent. Before writing any requirement that involves\
+       a third-party service, regional availability, or compliance standard, use\
+       web_search to verify it is achievable and appropriate. What you find must\
+       be reflected in your documents. The interview must be complete before\
+       you write any document. Documents are the artifact the interview exists\
+       only to make them accurate. ### How to produce the documents Write .echelon/functional-requirements.md\
+       first. It starts empty structure it yourself with Inclusions, Assumptions,\
+       and Exclusions sections. Exclusions include anything the user explicitly\
+       ruled out, and any ambiguous edges that surfaced during the interview and\
+       were negated. Once .echelon/functional-requirements.md is written, seed\
+       .echelon/terminology.md using the language you actually used while writing\
+       it not language you anticipated beforehand. Every term with any scope\
+       for ambiguous interpretation gets a tight, project-specific definition. Use \
+      update_terminology() for each entry. Use only terminology from .echelon/terminology.md\
+       in your documents. No synonyms, no paraphrasing of defined terms. Do not\
+       populate .echelon/constraints.md in this turn that is a separate task. "
+  pm_constraints:
+    agent: pm
+    story_points: 5
+    depends_on: pm_intake
+    task_prompt: ".echelon/functional-requirements.md is complete: --- .echelon/functional-requirements.md\
+       --- {{functional_requirements_content}} --- .echelon/constraints.md already\
+       exists, currently empty. Its current content: --- .echelon/constraints.md\
+       --- {{constraints_current_content}} --- Your task: populate .echelon/constraints.md\
+       using write(). Structure it yourself with these sections: Performance & Scalability,\
+       Platform & Environment, Security & Compliance, Technical Constraints. Write\
+       into each. For Performance & Scalability: infer constraints implied by\
+       the functional requirements even where no number was stated. A requirement \
+      for \"real-time notifications\" implies a latency constraint. Flag anything\
+       inferred as inferred, not user-specified. For Platform & Environment: state\
+       whether the product requires deployment at all some products (CLI\
+       tools, libraries, scripts) do not. Where it does, default to free-tier hosting\
+       unless the user has specified otherwise or .echelon/functional-requirements.md\
+       implies a scale that a free tier cannot support (state the specific requirement\
+       driving that judgment). This default does not need ask_user() to confirm\
+       it is the standing default for this system. Only ask if the user has\
+       given a specific signal (mentioned their own infrastructure, a specific cloud \
+      provider, or an expected user count/scale) that conflicts with a free-tier\
+       default. If a constraint decision is materially ambiguous in a way that\
+       would change architecture or scope, use ask_user() with your recommendation. \
+      Most constraint decisions should not require this the major ambiguities\
+       were resolved during intake. Use terminology from .echelon/terminology.md\
+       exactly. If a new term is needed for a constraint, use update_terminology()\
+       before using it in the document. Call complete_task() with: constraint\
+       categories covered, and which were inferred rather than explicitly stated. "
+  ux_flows:
+    agent: ux_designer
+    story_points: 5
+    depends_on: pm_intake
+    task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
+  pm_review_user_flows:
+    agent: pm
+    story_points: 5
+    depends_on: ux_flows
+    task_prompt: "The UX Designer has produced .echelon/user-flows.yaml. Read it now. \
+       Your task in this turn: verify that every functionality listed in .echelon/functional-requirements.md's\
+       Inclusions section is represented by at least one user flow. This is a coverage\
+       check, not a quality check you are not evaluating whether the flows\
+       are well-designed (that is not your expertise), only whether anything you\
+       specified as a requirement is missing from the flows entirely. For each\
+       inclusion, confirm you can point to a specific flow that covers it. Build\
+       this mapping explicitly before concluding. If you find a gap a requirement\
+       with no corresponding flow use create_exchange_node() to report it\
+       to the ux_designer, citing the specific requirement (quote it from .echelon/functional-requirements.md)\
+       and stating plainly that no flow appears to cover it. Do not guess at why \
+      it's missing or suggest how to fix it that is the UX Designer's judgment,\
+       not yours. If you find no gaps, call complete_task() with a summary confirming\
+       full coverage and the number of requirements checked against the number of \
+      flows found. If you did report gaps, do not call complete_task() until the\
+       UX Designer's response resolves them this task remains open until \
+      coverage is confirmed. "
+  ui_wireframes:
+    agent: ui_designer
+    story_points: 5
+    depends_on: pm_review_user_flows
+    task_prompt: ".echelon/user-flows.yaml is complete and has passed the PM's coverage\
+       review. --- .echelon/functional-requirements.md --- {{functional_requirements_content}} \
+      --- --- .echelon/terminology.md --- {{terminology_content}} --- ---\
+       .echelon/user-flows.yaml --- {{user_flows_content}} --- screen-descriptions.yaml\
+       and component-inventory.yaml already exist, scaffolded as empty lists. Their\
+       current content: --- screen-descriptions.yaml --- {{screen_descriptions_current_content}} \
+      --- component-inventory.yaml --- {{component_inventory_current_content}} \
+      --- Your task in this turn: populate both files with a screen description\
+       for every screen state implied by the flows, plus every component those screens\
+       draw from. Before working flow-by-flow, establish the design token system\
+       for this product. Read .echelon/functional-requirements.md and .echelon/terminology.md\
+       to understand the domain, audience, and register these are the source\
+       of distinctive choices, not design convention. Draft the token system: core\
+       palette (4\u20136 named hex values), typeface choices and their roles, layout\
+       concept, and one sentence on what makes this design specific to this product.\
+       Review it: would these choices appear in a generic product of the same type?\
+       Revise any element that would. Write the token system as the first entry in\
+       component-inventory.yaml before specifying any screen. Work flow-by-flow.\
+       For each flow: identify every distinct screen state it passes through (happy\
+       path steps, decision points, error states, empty states, loading states\
+       each is a screen or screen variant). For each screen state, write the full\
+       description first layout hierarchy, Gestalt groupings, component placement,\
+       visual style drawn from the token system, and annotations. Register any new\
+       component in the inventory before referencing it in a screen component_refs\
+       must always resolve to something that already exists. Batch your writes:\
+       populate several screens' worth of descriptions in one write() call rather\
+       than one call per screen both files already exist, never create_file(). \
+       Design mobile-first per your principles the mobile_layout is not an \
+      afterthought field, work it out alongside the base layout. If a flow implies\
+       a screen structure that seems to conflict with itself (e.g. two decision\
+       points that would require contradictory layouts), open an exchange with the\
+       ux_designer rather than silently picking an interpretation. Call complete_task()\
+       with a summary of how many screens you produced, how many components are\
+       in the inventory, and any flow conflicts you raised via exchange. "
+  user_review_wireframes:
+    agent: user
+    story_points: 5
+    depends_on: ui_wireframes
+    task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
+  pm_review_wireframes:
+    agent: pm
+    story_points: 5
+    depends_on: ui_wireframes
+    task_prompt: "The UI Designer has produced screen descriptions and a component \
+      inventory. Read both now. Your task in this turn: verify that every functionality\
+       listed in .echelon/functional-requirements.md's Inclusions section has a\
+       corresponding screen or screen state. As with the user flow review, this\
+       is a coverage check only not a visual or design quality assessment,\
+       which is outside your expertise. Cross-reference against the .echelon/user-flows.yaml\
+       you already reviewed: every flow you previously confirmed as covering a requirement\
+       should now also be represented by at least one screen in the UI Designer's\
+       output. A flow with no corresponding screen is a gap, even if the flow itself\
+       was complete. If you find a gap, use create_exchange_node() to report\
+       it to the ui_designer, citing the specific requirement and the flow it belongs\
+       to, and stating that no screen appears to represent it. If no gaps are\
+       found, call complete_task() with a summary confirming full coverage across\
+       requirements, flows, and screens. Do not call complete_task() until any\
+       reported gaps are resolved. "
+  interaction_designer:
+    agent: interaction_designer
+    story_points: 5
+    depends_on:
+    - pm_review_wireframes
+    - user_review_wireframes
+    task_prompt: "Screen descriptions and component inventory are provided below. \
+      The component inventory is your primary input you specify behavior per \
+      component, which then applies everywhere that component appears. --- component-inventory.yaml\
+       --- {{component_inventory_content}} --- --- screen-descriptions.yaml\
+       --- {{screen_descriptions_content}} --- .echelon/interaction-spec.yaml\
+       already exists, currently empty structure it yourself with motion_tokens\
+       and components lists: --- .echelon/interaction-spec.yaml --- {{interaction_spec_current_content}} \
+      --- Your task: populate .echelon/interaction-spec.yaml using write(). The\
+       file already exists never create_file(). Note: the first entry\
+       in component-inventory.yaml is the design token system (color palette, typography,\
+       layout) established by the UI designer. It is not a component do not\
+       produce an interaction spec for it. Your motion tokens should be named consistently\
+       with that visual token system. --- ### How to specify interactions \
+       **Motion tokens before components.** .echelon/interaction-spec.yaml has two\
+       sections: motion_tokens and components. The motion_tokens section must be\
+       complete before any component specification references timing every\
+       timed behavior in the spec references a token, never an arbitrary duration.\
+       Name motion tokens consistently with the visual token system the UI designer\
+       established in the component inventory. **Cover every state and every outcome.** \
+      For each component: identify every state it can be in, what triggers each \
+      state transition, and what the user perceives during that transition. Every \
+      interaction requires all four parts trigger, rules, feedback, loops/modes \
+      u2014 specified explicitly. Feedback is not optional for any trigger. For \
+      anything involving a network call or state mutation, error and timeout outcomes\
+       must be specified as explicitly as the success outcome. **Variants are\
+       not special cases.** If a component behaves differently depending on which\
+       screen it appears on (a button that is primary in one context, secondary\
+       in another), that is a named variant specify it as a variant in the\
+       component's spec, not as an inline exception in a screen. **Signature\
+       Moments.** If a component's interaction has the potential to be distinctively\
+       memorable the kind of behavior that defines the product's feel\
+       flag it as a Signature Moment candidate. Note it; do not over-specify it\
+       here. The point is to surface these intentionally so they receive deliberate\
+       design attention, not to design them in this pass. --- Batch your writes:\
+       group related components (all form inputs, all navigation elements) into\
+       the same write() call where their specs share patterns. If a screen description\
+       implies a component state not present in the inventory, open an exchange\
+       with the ui_designer rather than inventing a treatment. Call complete_task()\
+       with: components specified, motion tokens defined, and any inventory gaps\
+       raised via exchange. "
+  architect_design:
+    agent: architect
+    story_points: 5
+    depends_on: interaction_designer
+    task_prompt: "All design pipeline artifacts are provided below. Read every one\
+       before writing anything the architecture must account for what the\
+       product does, what constrains it, and how users move through it. --- .echelon/functional-requirements.md\
+       --- {{functional_requirements_content}} --- --- .echelon/constraints.md\
+       --- {{constraints_content}} --- --- .echelon/terminology.md --- {{terminology_content}} \
+      --- --- .echelon/user-flows.yaml --- {{user_flows_content}} --- ---\
+       screen-descriptions --- {{screen_descriptions_content}} --- --- component-inventory\
+       --- {{component_inventory_content}} --- --- interaction-specification\
+       --- {{interaction_specification_content}} --- .echelon/architecture.md\
+       already exists, currently empty: --- .echelon/architecture.md --- {{architecture_current_content}} \
+      --- Your task: populate .echelon/architecture.md using write() never\
+       create_file(). Use only the terms defined in .echelon/terminology.md, exactly\
+       as defined. Any new term you introduce module names, bounded context\
+       names, domain concepts coined during architecture must be added via\
+       update_terminology() before it is referenced anywhere in the document. The\
+       document must be readable to a non-technical domain expert and equally usable\
+       by a technical implementer. --- ### How to design: heuristics, not steps \
+       The following are not a checklist to execute in order. They are standards \
+      your architecture must meet and principles your reasoning must apply. How \
+      you apply them is yours to decide but all of them must be satisfied before \
+      you write the document. **Read the domain before you design it.** The inputs\
+       contain the architecture's raw material. Nouns in .echelon/terminology.md \
+      and the functional requirements are your entity candidates things the \
+      system stores, tracks, or acts upon. Verbs in .echelon/user-flows.yaml are your \
+      operation candidates things the system must do. Do not invent structure; \
+      read it out of the domain. Separately, classify each constraint in .echelon/constraints.md:\
+       does it force a structural boundary to exist regardless of technology (e.g.,\
+       \"must work offline\" requires a sync boundary), or does it only narrow technology\
+       choices within a boundary that would exist anyway? Structural constraints\
+       are decomposition drivers and belong in this document. Technological constraints\
+       belong in .echelon/tech-stack.yaml. **Establish accountability before decomposing.** \
+      Before proposing any structure, map every functional requirement to a blank \
+      \"home\" column. This map is what you fill as decomposition proceeds\
+       and what you close before you commit. Every requirement must land in exactly\
+       one module's ownership, or be explicitly marked as cross-cutting with a named \
+      strategy. A requirement still unhomed when you finish is either an architecture\
+       gap or an ambiguity that must be raised as an exchange with the PM. Do not\
+       paper over gaps with assumptions. Do not close this map until it is genuinely\
+       complete. **Decompositions must compete.** You must evaluate at least\
+       two structurally different candidate decompositions before committing to\
+       one. Two candidates that differ only in granularity are not different in\
+       kind they must differ on axis: by domain capability, by user type,\
+       by processing stage, by bounded context. For every candidate you evaluate,\
+       you must be able to answer: What does each module hide what specific\
+       design decision is encapsulated, invisible to its callers? How many modules\
+       does a likely change touch a feature addition, a third-party swap,\
+       a scale change? Does the structure follow the domain's natural language,\
+       or does it require translating domain concepts into technical groupings?\
+       The candidate that hides more, propagates change less, and follows the domain\
+       wins. Record this competition and its outcome in the document a reviewer\
+       must be able to see why the rejected decompositions lost, not reconstruct\
+       the reasoning from scratch. The alternatives section is not optional. \
+      **Every boundary must justify itself.** For every module boundary in your chosen\
+       decomposition: can you name at least two distinct, independent reasons this\
+       boundary exists two different consumers, change drivers, or domain\
+       concerns that justify the separation? If you cannot, the boundary is over-fragmented;\
+       merge it. A module called by exactly one other module for exactly one purpose\
+       is almost always an implementation detail of its caller, not a module. Equally:\
+       every dependency between modules must be justified. State, for each cross-module\
+       call, why that dependency exists. An unjustified dependency is a future change \
+      amplification hidden in the design. **Interfaces before internals, always.** \
+      For every module: commit to its name, purpose, ownership, explicit non-ownership,\
+       and conceptual interface before reasoning about its internals. The purpose\
+       must be stateable in one sentence if it cannot be, the module is not\
+       yet a module. The non-ownership statement is as important as the ownership\
+       statement: it is what prevents scope creep once implementation begins. The\
+       conceptual interface is plain language what callers can ask this module\
+       to do, and what it promises back. No routes, no types, no schemas at this\
+       stage. If you cannot write a clear interface without referencing implementation\
+       details, the interface is not yet well designed; redesign it. Only after\
+       the interface is committed do you consider what lives behind it. **Validate\
+       with flows before you write.** Before writing the document, trace 3 to 5\
+       of the most important or highest- risk user journeys end-to-end through your\
+       module map. For each: what triggers it, which module receives it, what does\
+       that module do, what does it call on other modules, what returns to the user?\
+       This is verification, not documentation it is cheap reasoning that\
+       catches structural failures before they are committed to paper. If a flow\
+       exposes a gap (a module everyone calls but nobody owns, an orchestration\
+       burden concentrated in one place that reveals a design concern, a requirement\
+       that has no home in the flow), fix the decomposition before writing. Do not\
+       narrate around the gap. The 3 to 5 flows you trace become the Critical Flows\
+       section of the document, written as architectural narrative. --- ###\
+       Document: required elements .echelon/architecture.md must contain at minimum\
+       the following elements. Organize them in whatever order best serves comprehension\
+       for this specific project the order below is a guide, not a mandate.\
+       You may add elements where the project genuinely warrants them. If an element\
+       below does not apply, write one sentence saying so and why do not\
+       omit it silently. **Overview** one paragraph: what the system does,\
+       grounded in the product vision and requirements, readable to a non-technical\
+       domain expert. **Domain Model** entities the system stores, tracks,\
+       or acts on; relationships between them; invariants that must always hold\
+       regardless of implementation. No schema: no column names, types, indexes. \
+       **Bounded Contexts** the boundaries within which the model is consistent \
+      and unambiguous. Name each context, define what belongs inside, define what \
+      crosses the boundary and what translation (if any) is required. If the domain\
+       is unified, say so explicitly in one sentence. **Component Map**\
+       one subsection per module, each containing: purpose (one sentence), what\
+       it owns, what it explicitly does not own, conceptual interface in plain language,\
+       and every cross-module dependency with a one-sentence justification for each.\
+       The conceptual interface here is for architectural reviewers plain\
+       language, no types or routes. Concrete, coder-facing contracts (typed signatures,\
+       schemas, error codes) are produced in the LLD node after the tech stack is\
+       finalised. **Critical Flows** the 3 to 5 flows validated before\
+       writing, now as architectural narrative: trigger, module-by-module trace,\
+       outcome. **Cross-Cutting Strategy** the approach (not implementation)\
+       for concerns that span all modules: error handling, authentication and authorisation, \
+      logging and observability. **Architectural Invariants** a checklist\
+       of things that must be true across the entire system, not just within one\
+       module. These become the first acceptance criteria for every coding task\
+       in the implementation plan. **Requirement Traceability** a table:\
+       requirement ID \u2192 module(s). Every requirement must appear. This is the\
+       PM's review artifact leave nothing blank. \"Unresolved exchange\
+       opened\" is a valid entry; a blank is not. **Deferred Decisions**\
+       items intentionally left to .echelon/tech-stack.yaml or .echelon/implementation-plan.yaml,\
+       named explicitly. A reviewer should not have to wonder whether an absence\
+       was an oversight. **Alternatives Considered** the candidate decompositions\
+       that were not chosen and why the chosen one won. --- ### Boundaries:\
+       what belongs here and what does not This document specifies structure and\
+       responsibility. It never specifies implementation. Must be specified,\
+       at the conceptual level: module purpose, ownership and non-ownership, plain-language\
+       interfaces, domain entities and invariants, bounded context boundaries, cross-module\
+       dependency justifications, critical flow narratives, requirement traceability. \
+       Must never appear: any named library, framework, language, or package; API \
+      routes or HTTP verbs; request/response schemas; database schema (columns, \
+      types, indexes); file paths or folder structure; algorithms, pseudocode, or \
+      typed function signatures. If you are unsure whether a line belongs here\
+       or in a task_prompt: would a coder be able to implement directly from this\
+       sentence without interpreting intent? If yes, it is too concrete it\
+       belongs in the implementation plan. If a reviewer would have to guess at\
+       intent to evaluate it, it is too vague add one more level of specificity,\
+       staying at the conceptual level. --- If any functional requirement cannot\
+       be homed in the architecture, open an exchange with the PM before calling\
+       complete_task(). Call complete_task() with: the primary decomposition axis\
+       and why it was chosen over the alternatives, the bounded contexts identified\
+       (or confirmation of a single unified context), and any requirement gaps raised \
+      as PM exchanges. "
+  architect_tech_stack:
+    agent: architect
+    story_points: 5
+    depends_on: architect_design
+    task_prompt: ".echelon/architecture.md is complete. Read it now the tech\
+       stack must serve the architecture you already committed to, not the other\
+       way around. .echelon/tech-stack.yaml already exists, currently empty. Its\
+       current content: --- .echelon/tech-stack.yaml --- {{tech_stack_current_content}} \
+      --- Your task: populate .echelon/tech-stack.yaml using write() never\
+       create_file(). For every major technology choice (language, framework,\
+       database, key libraries), state the specific requirement or constraint from\
+       .echelon/architecture.md or .echelon/constraints.md that drove the choice.\
+       A stack decision with no traceable reason back to a requirement is a red\
+       flag, not a convenience pick. Prefer reversible choices for anything peripheral;\
+       reserve firm commitment for choices that are genuinely hard to change later. \
+       Call complete_task() with a summary of the core stack and the single decision \
+      you are least certain about, if any. "
+  security_review:
+    agent: security_expert
+    story_points: 5
+    depends_on: architect_design
+    task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
+  mid_level_engineer_review:
+    agent: mid_level_engineer
+    story_points: 5
+    depends_on: architect_design
+    task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
+  pm_review_architecture:
+    agent: pm
+    story_points: 5
+    depends_on: architect_design
+    task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
+  architect_resolve_reviews:
+    agent: architect
+    story_points: 5
+    depends_on:
+    - architect_tech_stack
+    - security_review
+    - mid_level_engineer_review
+    - pm_review_architecture
+    task_prompt: |
+      Three review streams have reported on .echelon/architecture.md: security, a mid-level
+      engineer's implementation-readiness read, and the PM's requirement-coverage
+      check. Read all findings before responding to any of them.
+
+      Your task: resolve every finding, then finalize both .echelon/architecture.md and
+      .echelon/tech-stack.yaml.
+
+      For each finding: either revise the architecture to address it and note what
+      changed and why, or explicitly accept the residual risk with documented
+      reasoning. Silence is not resolution. If a finding requires clarification
+      you don't have, open an exchange with the reviewer rather than guessing.
+
+      Call complete_task() with: how many findings were addressed by revision
+      versus accepted as documented residual risk, and confirmation that both
+      documents are now final.
+  architect_implementation_plan:
+    agent: architect
+    story_points: 5
+    depends_on: architect_resolve_reviews
+    task_prompt: "Architecture, tech stack, LLDs, and interfaces are all finalised.\
+       Your task now is to translate that design into a concrete task graph that\
+       Phase 2 coding agents will execute. This is the bridge between architecture\
+       and code. Every task you write will be run by a real agent with a fixed tool\
+       set and a single context window write accordingly. --- .echelon/architecture.md\
+       --- {{architecture_content}} --- The .echelon/lld/ directory contains\
+       one file per module. Read each via read() as you process that module. Do\
+       not load all LLDs at once. The tasks/ directory exists. Write one .echelon/tasks/[module-id].yaml\
+       per module using create_file(). The orchestrator merges these into the live\
+       graph. --- ### Available agents Assign every task to exactly one\
+       of these roles. Each agent has these tools: read, create_file, write, bash,\
+       commit, create_exchange_node, complete_task.   backend_engineer    \
+       server-side logic, APIs, data persistence, business rules   frontend_engineer\
+         UI components, client-side logic, backend API integration   qa_engineer\
+                u2014 test scenario design, test plans, acceptance criteria;  \
+                              defines what must be tested and what pass/fail looks\
+       like   automation_engineer  writes and runs test code from QA's scenarios; \
+                               CI/CD pipelines, automated workflows   deployment_engineer\
+       infrastructure, environment config, deployment QA and automation\
+       tasks for the same feature are sequenced: qa_engineer defines the scenario\
+       first, automation_engineer implements the test code after. Reflect this in\
+       depends_on. --- ### Output format fields per module file \
+      module:   id                  u2014 matches the module id in .echelon/architecture.md \
+        lld                 u2014 path to this module's LLD file (.echelon/lld/[id].md) \
+        depends_on_modules  module ids that must be fully complete before\
+       any task in this module can start; drives memory and sequencing. Leave empty\
+       incase of no dependency   tasks              u2014 ordered list of tasks\
+       for this module Per task:   id           u2014 globally unique across\
+       all modules; use snake_case. Id will be used to key each task.   agent  \
+            u2014 one of the five roles above   story_points complexity,\
+       1-8; assign based on implementation difficulty,                  not time \
+        depends_on   task ids this task requires; may reference tasks from\
+       other                  modules. The orchestrator injects the complete_task()\
+       summary                  of each listed task into this task's context. \
+        task_prompt  the literal instruction this agent receives --- \
+      Example: ```yaml id: example-module lld: example-lld depends_on_modules: \
+      tasks:   example-task1:       agent: example-agent       story_points: example-story_points \
+            depends_on:        task_prompt: |         Example of a prompt given\
+       to an agent   example-task2:       agent: example-agent2       story_points:\
+       example-story_points2       depends_on: example-task1       task_prompt:\
+       |         Example of a prompt given to an agent ``` ### How to write\
+       task_prompts Before writing any task_prompt, put yourself in that agent's\
+       position: they have their tools, their module's LLD, and the completion summaries\
+       of their depends_on tasks. Ask whether you could complete this task from\
+       this prompt alone, without making a single design decision. If not, either\
+       the prompt is underspecified or the LLD has a gap. A task_prompt must\
+       name what to build and where specific files to create or modify, referencing\
+       the relevant LLD section for the spec. It must state what done looks like:\
+       a concrete, verifiable output the agent or a QA agent can check. It must\
+       not re-specify schema, signatures, or contracts already in the LLD\
+       reference them, do not duplicate them. Each task produces one testable\
+       artifact. If a task has no independently verifiable output when complete,\
+       it is too large or too vague split or reframe it. Scope every task\
+       for a single agent session. --- ### Testing strategy Every module\
+       ends with two fixed tasks, after all coding tasks in that module are complete.\
+       These test the module in isolation not flows that span multiple modules. \
+         qa_engineer task: design component test scenarios for this module only, \
+        treating it as a black box through its public interface. The qa_engineer \
+        receives .echelon/interfaces.md the module's operations, error codes,\
+       and   architectural invariants are sufficient. Test scenarios must assert\
+       at   each step of a flow, not just the final outcome this makes any \
+        assertion failure self-localizing. This task depends on all coding tasks \
+        in the module.   automation_engineer task: implement and run the component\
+       test code from   the QA scenarios. Depends on the qa_engineer task. Its pass/fail\
+       result   is the gate the next module's depends_on_modules waits on\
+       this. Do not add QA or automation tasks anywhere else in the plan. Do not\
+       add per-task test instructions to coder task_prompts testing discipline\
+       is handled separately. --- ### Deployment Deployment is not module-scoped\
+       like other work it operates on the whole finished system, not one\
+       module's LLD. Where the product requires it, model it as a final module:\
+       `deployment` with `depends_on_modules` listing every other module in the\
+       plan, so it only starts once everything is built and gated tests have passed. \
+       First judge whether deployment tasks belong in the plan at all. Some products \
+      need none (an internal script, a library with no runtime service). Others \
+      need only packaging (a CLI tool cross-platform build and registry publish, \
+      no hosting). Others need full infrastructure (a web app with a backend and \
+      database compute provisioning, database provisioning, and connecting\
+       them). Base this judgment on .echelon/functional-requirements.md and .echelon/tech-stack.yaml,\
+       not assumption if it's ambiguous, this is worth an exchange with the\
+       PM rather than a guess. Where deployment tasks exist, deployment_engineer\
+       receives .echelon/architecture.md, .echelon/tech-stack.yaml, and every module's\
+       .echelon/interfaces.md not a module LLD, since there is no single\
+       module this work belongs to. Task_prompts should specify what needs to run\
+       where and how components must connect, per what .echelon/architecture.md\
+       and .echelon/tech-stack.yaml already established not which specific \
+      platform or service to use; that choice belongs to deployment_engineer. \
+      --- If the tech stack includes meaningful integration risk novel library \
+      combinations, unfamiliar infrastructure, or architectural patterns not previously\
+       validated include a tracer bullet as the first task: the thinnest\
+       working slice through all architectural layers with real integration points,\
+       nothing stubbed. It exists to surface fundamental incompatibilities before\
+       other tasks are built on the same assumptions. If the stack is well-understood\
+       and the integration points are low-risk, a tracer bullet is not required.\
+       State your reasoning either way in the complete_task() summary. --- \
+      Process one module at a time: read its LLD, write all its tasks, then before \
+      moving to the next module run a mental tracer bullet across the tasks you \
+      just wrote. Walk every section of the module's LLD and confirm each is covered\
+       by at least one task data model, service structure, API contracts, \
+      internal flows, module invariants. Then trace the dependency chain: do the \
+      tasks, executed in their specified order, produce a complete, working module \
+      by the time the qa_engineer task fires? If a gap exists (an LLD section with \
+      no owning task, a dependency chain that leaves something unbuilt), add or \
+      correct tasks before proceeding. Do not carry gaps forward. Every task must\
+       trace to a named section in its module's LLD. Call complete_task() with:\
+       total task count, whether a tracer bullet was included and why, and which\
+       modules have empty depends_on_modules and can therefore start immediately. "
