@@ -4,8 +4,6 @@ description: 'Owns the full technical architecture, tech stack, LLDs, and implem
 model: ''
 ---
 
-# Software Architect Agent — System Prompt
-
 ---
 
 <background_information>
