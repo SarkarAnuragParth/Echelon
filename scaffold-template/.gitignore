@@ -3,4 +3,7 @@ target/
 __pycache__/
 dist/
 build/
+.echelon/dumps/
+.echelon/conversations/
+.echelon/state/
 venv/

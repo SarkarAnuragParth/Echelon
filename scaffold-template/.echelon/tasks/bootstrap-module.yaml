@@ -1,11 +1,11 @@
 id: bootstrap-module
 lld: .echelon/lld/bootstrap-module.md
-depends_on_modules: null
+depends_on_modules: []
 tasks:
   pm_intake:
     agent: pm
     story_points: 5
-    depends_on: null
+    depends_on: []
     task_prompt: "This is a new project. The user has provided the following spec: \
        {{user_spec_document}} .echelon/functional-requirements.md and .echelon/terminology.md\
        already exist, currently empty. Their current content: Your task: conduct\
@@ -41,7 +41,7 @@ tasks:
   pm_constraints:
     agent: pm
     story_points: 5
-    depends_on: pm_intake
+    depends_on: [pm_intake]
     task_prompt: ".echelon/functional-requirements.md is complete: --- .echelon/functional-requirements.md\
        --- {{functional_requirements_content}} --- .echelon/constraints.md already\
        exists, currently empty. Its current content: --- .echelon/constraints.md\
@@ -70,12 +70,12 @@ tasks:
   ux_flows:
     agent: ux_designer
     story_points: 5
-    depends_on: pm_intake
+    depends_on: [pm_intake]
     task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
   pm_review_user_flows:
     agent: pm
     story_points: 5
-    depends_on: ux_flows
+    depends_on: [ux_flows]
     task_prompt: "The UX Designer has produced .echelon/user-flows.yaml. Read it now. \
        Your task in this turn: verify that every functionality listed in .echelon/functional-requirements.md's\
        Inclusions section is represented by at least one user flow. This is a coverage\
@@ -96,7 +96,7 @@ tasks:
   ui_wireframes:
     agent: ui_designer
     story_points: 5
-    depends_on: pm_review_user_flows
+    depends_on: [pm_review_user_flows]
     task_prompt: ".echelon/user-flows.yaml is complete and has passed the PM's coverage\
        review. --- .echelon/functional-requirements.md --- {{functional_requirements_content}} \
       --- --- .echelon/terminology.md --- {{terminology_content}} --- ---\
@@ -134,12 +134,12 @@ tasks:
   user_review_wireframes:
     agent: user
     story_points: 5
-    depends_on: ui_wireframes
+    depends_on: [ui_wireframes]
     task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
   pm_review_wireframes:
     agent: pm
     story_points: 5
-    depends_on: ui_wireframes
+    depends_on: [ui_wireframes]
     task_prompt: "The UI Designer has produced screen descriptions and a component \
       inventory. Read both now. Your task in this turn: verify that every functionality\
        listed in .echelon/functional-requirements.md's Inclusions section has a\
@@ -158,9 +158,7 @@ tasks:
   interaction_designer:
     agent: interaction_designer
     story_points: 5
-    depends_on:
-    - pm_review_wireframes
-    - user_review_wireframes
+    depends_on: [pm_review_wireframes, user_review_wireframes]
     task_prompt: "Screen descriptions and component inventory are provided below. \
       The component inventory is your primary input you specify behavior per \
       component, which then applies everywhere that component appears. --- component-inventory.yaml\
@@ -204,7 +202,7 @@ tasks:
   architect_design:
     agent: architect
     story_points: 5
-    depends_on: interaction_designer
+    depends_on: [interaction_designer]
     task_prompt: "All design pipeline artifacts are provided below. Read every one\
        before writing anything the architecture must account for what the\
        product does, what constrains it, and how users move through it. --- .echelon/functional-requirements.md\
@@ -344,7 +342,7 @@ tasks:
   architect_tech_stack:
     agent: architect
     story_points: 5
-    depends_on: architect_design
+    depends_on: [architect_design]
     task_prompt: ".echelon/architecture.md is complete. Read it now the tech\
        stack must serve the architecture you already committed to, not the other\
        way around. .echelon/tech-stack.yaml already exists, currently empty. Its\
@@ -361,26 +359,22 @@ tasks:
   security_review:
     agent: security_expert
     story_points: 5
-    depends_on: architect_design
+    depends_on: [architect_design]
     task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
   mid_level_engineer_review:
     agent: mid_level_engineer
     story_points: 5
-    depends_on: architect_design
+    depends_on: [architect_design]
     task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
   pm_review_architecture:
     agent: pm
     story_points: 5
-    depends_on: architect_design
+    depends_on: [architect_design]
     task_prompt: 'Placeholder: Prompt not yet defined for this role/node.'
   architect_resolve_reviews:
     agent: architect
     story_points: 5
-    depends_on:
-    - architect_tech_stack
-    - security_review
-    - mid_level_engineer_review
-    - pm_review_architecture
+    depends_on: [architect_tech_stack, security_review, mid_level_engineer_review, pm_review_architecture]
     task_prompt: |
       Three review streams have reported on .echelon/architecture.md: security, a mid-level
       engineer's implementation-readiness read, and the PM's requirement-coverage
@@ -400,7 +394,7 @@ tasks:
   architect_implementation_plan:
     agent: architect
     story_points: 5
-    depends_on: architect_resolve_reviews
+    depends_on: [architect_resolve_reviews]
     task_prompt: "Architecture, tech stack, LLDs, and interfaces are all finalised.\
        Your task now is to translate that design into a concrete task graph that\
        Phase 2 coding agents will execute. This is the bridge between architecture\
@@ -438,9 +432,9 @@ tasks:
         task_prompt  the literal instruction this agent receives --- \
       Example: ```yaml id: example-module lld: example-lld depends_on_modules: \
       tasks:   example-task1:       agent: example-agent       story_points: example-story_points \
-            depends_on:        task_prompt: |         Example of a prompt given\
+            depends_on:[]       task_prompt: |         Example of a prompt given\
        to an agent   example-task2:       agent: example-agent2       story_points:\
-       example-story_points2       depends_on: example-task1       task_prompt:\
+       example-story_points2       depends_on: [example-task1]       task_prompt:\
        |         Example of a prompt given to an agent ``` ### How to write\
        task_prompts Before writing any task_prompt, put yourself in that agent's\
        position: they have their tools, their module's LLD, and the completion summaries\
