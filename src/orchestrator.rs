@@ -1,11 +1,10 @@
 use std::path::{Path,PathBuf};
-use std::thread;
 use std::time::Duration;
-use tokio::task::JoinSet;
-use std::sync::{Arc, Mutex};
-use regex::Regex;
 use std::sync::LazyLock;
 use std::borrow::Cow;
+use std::sync::{Arc, Mutex};
+use tokio::task::JoinSet;
+use regex::Regex;
 
 use crate::agent_runtime::{AgentRuntime};
 use crate::model_client::{ModelConfig, ModelClient, SharedModelClient};
@@ -19,52 +18,56 @@ static PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\{(\{.*?\})\}").unwrap()
 });
 
-const CONCURRENY_LIMIT: usize = 3; //Wil be fetched using env variable later
+const CONCURRENY_LIMIT: usize = 5; //Wil be fetched using env variable later
 
 
-pub async fn start(provider: Option<&str>){
-    let project_path: PathBuf = {match std::env::var("PROJECT_PATH"){
-    Ok(value) => PathBuf::from(value),
-    Err(_) => panic!("Environment variable not set")
-        }};
+pub async fn start(provider: Option<&str>, project_path: PathBuf){
+
     let model_client = get_model_client(provider);
     execute_module(".echelon/tasks/bootstrap-module.yaml", &project_path, model_client).await;
 }
 
 
 async fn execute_module(module_path: &str, project_path: &Path, model_client: Arc<dyn ModelClient>) {
-    let module = load_module(module_path).unwrap();
+    let module = load_module(project_path.join(module_path)).unwrap();
     let graph = Arc::new(std::sync::Mutex::new(create_graph_from_module(module)));
     //let top_ord_nodes = graph.lock().await.ord_nodes.clone();
-    let node_states = graph.lock().unwrap().node_state.clone();
     let mut set =JoinSet::new();
     let graph_clone = Arc::clone(&graph);
     let tool_execution_handler = Arc::new(ToolExecutionHandler::new(project_path, graph_clone));
-    
     loop {
         while set.len() < CONCURRENY_LIMIT {
-            if let Some(node) = graph.lock().unwrap().ord_nodes.pop(){
-                if matches!(node_states.get(&node), Some(State::Completed(_))) {
+            
+            let curr_node = graph.lock().unwrap().ord_nodes.pop();
+            if let Some(node) = curr_node{
+                if matches!(graph.lock().unwrap().node_state.get(&node), Some(State::Completed(_))) {
                     continue
                 }
                 
                 let mut parents_state = graph.lock().unwrap().check_dependencies_state(&node);
-                
                 if parents_state == State::Waiting {
-                    let queue = &graph.lock().unwrap().ord_nodes;
-                    let nodes = &graph.lock().unwrap().nodes;
-                    panic!("Somehow we picked up a child node - check the topological sort and actual expected value - {queue:?} - {nodes:?}");
+                    panic!("Somehow we picked up a child node - check the topological sort and actual expected value");
                 }
+                
+                
 
                 while parents_state == State::Executing {
-                    thread::sleep(Duration::from_secs(10));
+                    println!("{node} is waiting");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
                     parents_state = graph.lock().unwrap().check_dependencies_state(&node);
                 }
+
+                *graph.lock().unwrap().node_state.get_mut(&node).unwrap() = State::Executing;                
                 let graph_clone = Arc::clone(&graph);
                 
                 let handler = Arc::clone(&tool_execution_handler);
                 let model_client_clone = Arc::clone(&model_client);
-                set.spawn(execute_node_or_wait(node, handler, graph_clone,model_client_clone, project_path.to_path_buf()));
+                set.spawn(execute_node_or_wait(node.clone(), handler, graph_clone,model_client_clone, project_path.to_path_buf()));
+                println!("{node} has been spawned");
+            }
+            else {
+                println!("Empty queue!");
+                break;
             }
         }
         match set.join_next().await {
@@ -89,7 +92,7 @@ async fn execute_node_or_wait(node: String, handler: Arc<ToolExecutionHandler>, 
     let system_prompt = agent.system_prompt;
     let model_config = ModelConfig { provider: String::from("local"), model: String::from("None"), temperature: Some(temperature), enable_thinking: Some(true) } ;
 
-    AgentRuntime::run(system_prompt, schema, content, agent_name, model_config, model_client, handler, node, 20).await;
+    AgentRuntime::run(system_prompt, schema, content, agent_name, model_config, model_client, handler, node, 20, project_path).await;
 
 }
 

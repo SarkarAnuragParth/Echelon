@@ -1,4 +1,5 @@
 use echelon_runtime::scaffold;
+use echelon_runtime::orchestrator;
 
 fn usage() -> ! {
     eprintln!("usage: echelon <init|start> [project_dir]");
@@ -35,9 +36,9 @@ async fn main() {
                 eprintln!("{e}");
                 std::process::exit(1);
             }
-            // Orchestrator, AgentRuntime wiring, and the daemon loop are not
-            // yet built — see DECISION_REFERENCE for what's still open.
-            println!("Project ready at {}. Daemon not yet implemented.", root.display());
+            
+            println!("Project ready at {}.", root.display());
+            orchestrator::start(None,root).await;
         }
         _ => usage(),
     }

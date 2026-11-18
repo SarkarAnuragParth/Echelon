@@ -31,6 +31,7 @@ pub struct ToolResult {
 pub struct ToolCallContext {
     pub agent_role: String,
     pub node_id: String,
+    pub project_root: std::path::PathBuf
 }
 
 
@@ -79,6 +80,7 @@ impl AgentRuntime {
         tool_handler: Arc<ToolExecutionHandler>,
         node_id: String,
         iteration_cap: u32,
+        project_root: std::path::PathBuf,
     ) -> RunResult {
         let mut conversation: Vec<Turn> = vec![Turn::User {
             content: task_prompt,
@@ -87,6 +89,7 @@ impl AgentRuntime {
         let ctx = ToolCallContext {
             agent_role: agent_name.clone(),
             node_id: node_id.clone(),
+            project_root: project_root
         };
 
         let mut iterations: u32 = 0;

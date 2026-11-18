@@ -35,7 +35,7 @@ impl MockModelClient {
 
     pub fn all_tools_script() -> Arc<Self> {
         Self::new(vec![
-            Self::tool("view_project_structure", json!({})),
+            Self::tool("web_search", json!({ "query": "rust async trait objects", "topic": "general"})),
             Self::tool(
                 "create_file",
                 json!({
@@ -45,9 +45,18 @@ impl MockModelClient {
                 }),
             ),
             Self::tool(
+                "complete_task",
+                json!({ "summary": "Mock run exercised 1 tool." }),
+            ),
+            Self::tool(
                 "read",
                 json!({ "file_path": "mock/notes.md", "include_git_info": false }),
             ),
+            Self::tool(
+                "complete_task",
+                json!({ "summary": "Mock run exercised 1 tool." }),
+            ),
+            Self::tool("view_project_structure", json!({})),
             // create_file returns version 1, so this write is valid without a fresh read.
             Self::tool(
                 "write",
@@ -64,14 +73,13 @@ impl MockModelClient {
                     "definition": "A test execution where a scripted client replaces the real model."
                 }),
             ),
-            Self::tool("bash", json!({ "command": "echo hello from mock" })),
+            Self::tool("bash", json!({ "command": "python3 -m venv .venv" })),
             Self::tool("commit", json!({ "message": "test(mock): add notes.md via mock run" })),
-            Self::tool("load_skill", json!({ "name": "example-skill" })),
+            Self::tool("load_skill", json!({ "name": "logging" })),
             Self::tool(
                 "request_skill",
                 json!({ "need": "Mock request: need a skill covering X for tasks A and B." }),
             ),
-            Self::tool("web_search", json!({ "query": "rust async trait objects", "topic": "general" })),
             Self::tool(
                 "ask_user",
                 json!({

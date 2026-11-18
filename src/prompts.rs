@@ -25,7 +25,7 @@ pub struct Task {
     pub temperature: f32
 }
 
-pub fn load_module(path: &str) -> Result<Module, Box<dyn std::error::Error>> {
+pub fn load_module(path: std::path::PathBuf) -> Result<Module, Box<dyn std::error::Error>> {
     let yaml = std::fs::read_to_string(path)?;
     let module: Module = serde_yaml::from_str(&yaml)?;
     Ok(module)
